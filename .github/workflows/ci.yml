@@ -29,9 +29,9 @@ jobs:
           go-version: "1.24"
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: v2.6
+          version: "v2.8"
 
   test:
     name: Test

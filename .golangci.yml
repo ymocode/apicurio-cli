@@ -8,7 +8,11 @@ linters:
     staticcheck:
       checks:
         - all
-        - -QF1003  # Switch vs if-else - style preference, not a bug
+        - -QF1003  # Switch vs if-else - style preference
+    gosec:
+      excludes:
+        - G402  # TLS InsecureSkipVerify - intentional, controlled by --insecure flag
+        - G306  # WriteFile 0644 - output files are not sensitive, need to be readable
   exclusions:
     presets:
       - std-error-handling
