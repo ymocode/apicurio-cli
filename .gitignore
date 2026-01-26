@@ -1,0 +1,43 @@
+# Binaries
+bin/
+apicurio-client
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.html
+coverage.txt
+
+# CI/CD artifacts
+gosec-report.json
+changelog.md
+
+# Dependency directories
+vendor/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Config files with secrets
+.apicurio-client.yaml
+!examples/.apicurio-client.yaml
+
+# Go workspace file
+go.work
+.claude
+backlog.md
+backlog.txt

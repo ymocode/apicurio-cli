@@ -1,0 +1,131 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build for multiple platforms
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          LDFLAGS="-X main.Version=${VERSION} -w -s"
+
+          # Linux AMD64
+          GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o bin/apicurio-client-linux-amd64 ./cmd/apicurio-client
+
+          # Linux ARM64
+          GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o bin/apicurio-client-linux-arm64 ./cmd/apicurio-client
+
+          # macOS AMD64
+          GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o bin/apicurio-client-darwin-amd64 ./cmd/apicurio-client
+
+          # macOS ARM64 (Apple Silicon)
+          GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o bin/apicurio-client-darwin-arm64 ./cmd/apicurio-client
+
+          # Windows AMD64
+          GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o bin/apicurio-client-windows-amd64.exe ./cmd/apicurio-client
+
+          # Windows ARM64
+          GOOS=windows GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o bin/apicurio-client-windows-arm64.exe ./cmd/apicurio-client
+
+      - name: Create checksums
+        run: |
+          cd bin
+          sha256sum apicurio-client-* > checksums.txt
+          cat checksums.txt
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "## Changes" > changelog.md
+            echo "Initial release" >> changelog.md
+          else
+            echo "## Changes since $PREV_TAG" > changelog.md
+            echo "" >> changelog.md
+            git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD >> changelog.md
+          fi
+
+          cat changelog.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Release ${{ steps.version.outputs.VERSION }}
+          body_path: changelog.md
+          files: |
+            bin/apicurio-client-linux-amd64
+            bin/apicurio-client-linux-arm64
+            bin/apicurio-client-darwin-amd64
+            bin/apicurio-client-darwin-arm64
+            bin/apicurio-client-windows-amd64.exe
+            bin/apicurio-client-windows-arm64.exe
+            bin/checksums.txt
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "MAJOR_MINOR=$(echo $VERSION | cut -d. -f1,2)" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+        if: secrets.DOCKER_USERNAME != ''
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ secrets.DOCKER_USERNAME != '' }}
+          build-args: |
+            VERSION=${{ steps.version.outputs.VERSION }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/apicurio-client:latest
+            ${{ secrets.DOCKER_USERNAME }}/apicurio-client:${{ steps.version.outputs.VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/apicurio-client:${{ steps.version.outputs.MAJOR_MINOR }}
+        if: secrets.DOCKER_USERNAME != ''

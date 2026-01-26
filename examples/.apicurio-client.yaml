@@ -1,0 +1,29 @@
+# Apicurio Registry CLI Client Configuration
+# Place this file at ~/.apicurio-client.yaml
+
+# Registry URL (required)
+registry_url: https://registry.example.com
+
+# API version: v2, v3, or ccompat (default: v2)
+api_version: v2
+
+# Authentication mode: none, basic, or oidc
+auth: none
+
+# Basic authentication
+# username: admin
+# password: secret
+
+# OIDC authentication (Keycloak)
+# auth: oidc
+# keycloak_url: https://keycloak.example.com
+# client_id: apicurio-client
+# client_secret: your-client-secret
+# realm: apicurio
+
+# Group and artifact ID (optional - defaults from schema)
+# group: com.example
+# artifact_id: User
+
+# TLS options
+# insecure: false  # Set to true to skip TLS certificate verification

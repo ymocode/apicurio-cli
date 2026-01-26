@@ -1,0 +1,41 @@
+{
+  "type": "record",
+  "namespace": "com.example.users",
+  "name": "User",
+  "version": "1.1.0",
+  "doc": "User record for customer management system",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "Unique user identifier"
+    },
+    {
+      "name": "username",
+      "type": "string",
+      "doc": "User login name"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "doc": "User email address"
+    },
+    {
+      "name": "created_at",
+      "type": "long",
+      "doc": "Timestamp of user creation"
+    },
+    {
+      "name": "phone",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Optional phone number"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "default": "active",
+      "doc": "User account status"
+    }
+  ]
+}
