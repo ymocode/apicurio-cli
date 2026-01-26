@@ -11,14 +11,14 @@ import (
 
 // ValidationResult represents the result of validating an AsyncAPI document
 type ValidationResult struct {
-	Valid            bool     // Overall validation passed
-	IsNew            bool     // Artifact doesn't exist in registry (new)
-	IsIdentical      bool     // Content is identical to registry version
-	CurrentVersion   string   // Current version in registry (empty if new)
-	ProposedVersion  string   // Version from document
-	Errors           []string // Validation errors
-	Warnings         []string // Validation warnings
-	MissingRefs      []string // Referenced schemas not found in registry
+	CurrentVersion  string
+	ProposedVersion string
+	Errors          []string
+	Warnings        []string
+	MissingRefs     []string
+	Valid           bool
+	IsNew           bool
+	IsIdentical     bool
 }
 
 // Validate validates an AsyncAPI document against the registry

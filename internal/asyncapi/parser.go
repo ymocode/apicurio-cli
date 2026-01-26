@@ -1,3 +1,4 @@
+// Package asyncapi provides AsyncAPI document parsing and validation.
 package asyncapi
 
 import (
@@ -13,17 +14,17 @@ import (
 // asyncAPIDocument represents the structure of an AsyncAPI document
 // Only fields we need are defined
 type asyncAPIDocument struct {
-	AsyncAPI   string `yaml:"asyncapi"`
-	XNamespace string `yaml:"x-namespace"`
-	XDomain    string `yaml:"x-domain"`
-	Info       struct {
+	Components struct {
+		Schemas map[string]schemaRef `yaml:"schemas"`
+	} `yaml:"components"`
+	Info struct {
 		Title       string `yaml:"title"`
 		Version     string `yaml:"version"`
 		Description string `yaml:"description"`
 	} `yaml:"info"`
-	Components struct {
-		Schemas map[string]schemaRef `yaml:"schemas"`
-	} `yaml:"components"`
+	AsyncAPI   string `yaml:"asyncapi"`
+	XNamespace string `yaml:"x-namespace"`
+	XDomain    string `yaml:"x-domain"`
 }
 
 // schemaRef represents a schema that may contain a $ref to an external artifact

@@ -1,3 +1,4 @@
+// Package auth provides authentication mechanisms for Apicurio Registry API.
 package auth
 
 import (
@@ -98,7 +99,7 @@ func CreateHTTPClient(cfg *config.Config) (*http.Client, error) {
 }
 
 // createHTTPClientForKiota creates an HTTP client suitable for Kiota with proper TLS configuration
-func createHTTPClientForKiota(cfg *config.Config) (*http.Client, error) {
+func createHTTPClientForKiota(cfg *config.Config) *http.Client {
 	// Create a properly configured HTTP transport with TLS settings
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
@@ -110,11 +111,9 @@ func createHTTPClientForKiota(cfg *config.Config) (*http.Client, error) {
 	// Create HTTP client with our custom transport
 	// We're using a simple client instead of GetDefaultClient to ensure we have full control over TLS
 	// Kiota middleware can be problematic when trying to configure the underlying transport
-	httpClient := &http.Client{
+	return &http.Client{
 		Transport: transport,
 	}
-
-	return httpClient, nil
 }
 
 // CreateKiotaAdapter creates a reusable Kiota request adapter with authentication
@@ -137,10 +136,7 @@ func CreateKiotaAdapter(cfg *config.Config, apiPath string) (*kiotaHttp.NetHttpR
 	}
 
 	// Create HTTP client
-	httpClient, err := createHTTPClientForKiota(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP client: %w", err)
-	}
+	httpClient := createHTTPClientForKiota(cfg)
 
 	// For OIDC, wrap with OAuth2 transport
 	if cfg.AuthMode == "oidc" {

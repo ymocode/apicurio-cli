@@ -361,10 +361,6 @@ func safeString(s *string) string {
 	return *s
 }
 
-func formatTime(t time.Time) string {
-	return t.Format(time.RFC3339)
-}
-
 // formatKiotaTime formats a Kiota Time pointer to string
 // Kiota uses a custom Time type that wraps time.Time
 func formatKiotaTime(t interface{}) string {

@@ -2,12 +2,20 @@ package cli
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/ymocode/apicurio-client/internal/config"
 	"github.com/ymocode/apicurio-client/internal/logger"
 )
+
+// mustBindPFlag binds a viper key to a cobra flag, panics on error.
+func mustBindPFlag(key, flagName string) {
+	if err := viper.BindPFlag(key, rootCmd.PersistentFlags().Lookup(flagName)); err != nil {
+		log.Fatalf("failed to bind flag %s: %v", flagName, err)
+	}
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "apicurio-client",
@@ -48,20 +56,20 @@ func init() {
 	rootCmd.PersistentFlags().Bool("verbose", false, "Enable verbose logging")
 	rootCmd.PersistentFlags().Bool("debug", false, "Enable debug logging (implies --verbose)")
 
-	viper.BindPFlag("registry_url", rootCmd.PersistentFlags().Lookup("registry-url"))
-	viper.BindPFlag("api_version", rootCmd.PersistentFlags().Lookup("api-version"))
-	viper.BindPFlag("group", rootCmd.PersistentFlags().Lookup("group"))
-	viper.BindPFlag("artifact_id", rootCmd.PersistentFlags().Lookup("artifact-id"))
-	viper.BindPFlag("auth", rootCmd.PersistentFlags().Lookup("auth"))
-	viper.BindPFlag("username", rootCmd.PersistentFlags().Lookup("username"))
-	viper.BindPFlag("password", rootCmd.PersistentFlags().Lookup("password"))
-	viper.BindPFlag("keycloak_url", rootCmd.PersistentFlags().Lookup("keycloak-url"))
-	viper.BindPFlag("client_id", rootCmd.PersistentFlags().Lookup("client-id"))
-	viper.BindPFlag("client_secret", rootCmd.PersistentFlags().Lookup("client-secret"))
-	viper.BindPFlag("realm", rootCmd.PersistentFlags().Lookup("realm"))
-	viper.BindPFlag("insecure", rootCmd.PersistentFlags().Lookup("insecure"))
-	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
-	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
+	mustBindPFlag("registry_url", "registry-url")
+	mustBindPFlag("api_version", "api-version")
+	mustBindPFlag("group", "group")
+	mustBindPFlag("artifact_id", "artifact-id")
+	mustBindPFlag("auth", "auth")
+	mustBindPFlag("username", "username")
+	mustBindPFlag("password", "password")
+	mustBindPFlag("keycloak_url", "keycloak-url")
+	mustBindPFlag("client_id", "client-id")
+	mustBindPFlag("client_secret", "client-secret")
+	mustBindPFlag("realm", "realm")
+	mustBindPFlag("insecure", "insecure")
+	mustBindPFlag("verbose", "verbose")
+	mustBindPFlag("debug", "debug")
 }
 
 func initConfig() {

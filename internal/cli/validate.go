@@ -28,7 +28,7 @@ func init() {
 	validateCmd.Flags().String("format", "json", "Output format: json, table, summary, markdown")
 	validateCmd.Flags().StringP("output", "o", "", "Output file path (default: stdout)")
 
-	validateCmd.MarkFlagRequired("file")
+	_ = validateCmd.MarkFlagRequired("file")
 }
 
 func runValidate(cmd *cobra.Command, args []string) error {

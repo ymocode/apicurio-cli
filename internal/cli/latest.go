@@ -72,21 +72,25 @@ func runLatest(cmd *cobra.Command, args []string) error {
 	switch content := contentResp.(type) {
 	case string:
 		// Content is already a string (most common case)
-		if err := json.Unmarshal([]byte(content), &schemaContent); err != nil {
+		err = json.Unmarshal([]byte(content), &schemaContent)
+		if err != nil {
 			return fmt.Errorf("failed to parse schema content: %w", err)
 		}
 	case []byte:
 		// Content is bytes
-		if err := json.Unmarshal(content, &schemaContent); err != nil {
+		err = json.Unmarshal(content, &schemaContent)
+		if err != nil {
 			return fmt.Errorf("failed to parse schema content: %w", err)
 		}
 	default:
 		// Content is already structured, use as-is
-		contentBytes, err := json.Marshal(contentResp)
+		var contentBytes []byte
+		contentBytes, err = json.Marshal(contentResp)
 		if err != nil {
 			return fmt.Errorf("failed to marshal content: %w", err)
 		}
-		if err := json.Unmarshal(contentBytes, &schemaContent); err != nil {
+		err = json.Unmarshal(contentBytes, &schemaContent)
+		if err != nil {
 			return fmt.Errorf("failed to parse schema content: %w", err)
 		}
 	}

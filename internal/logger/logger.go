@@ -1,3 +1,4 @@
+// Package logger provides structured logging for apicurio-client.
 package logger
 
 import (

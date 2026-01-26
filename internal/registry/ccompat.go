@@ -1,3 +1,4 @@
+// Package registry provides clients for Apicurio Registry API versions.
 package registry
 
 import (
@@ -17,9 +18,9 @@ import (
 )
 
 type CCompatClient struct {
-	baseURL    string
 	httpClient *http.Client
 	config     *config.Config
+	baseURL    string
 }
 
 // Confluent Schema Registry compatible request/response structures based on openapi_ccompat.json
@@ -35,17 +36,17 @@ type ccompatSchemaReference struct {
 	Version int    `json:"version"`
 }
 
-type ccompatSchemaId struct {
+type ccompatSchemaID struct {
 	ID int `json:"id"`
 }
 
 type ccompatSchema struct {
 	Subject    string                   `json:"subject"`
-	Version    int                      `json:"version"`
-	ID         int                      `json:"id"`
 	Schema     string                   `json:"schema"`
 	SchemaType string                   `json:"schemaType,omitempty"`
 	References []ccompatSchemaReference `json:"references,omitempty"`
+	Version    int                      `json:"version"`
+	ID         int                      `json:"id"`
 }
 
 type ccompatCompatibilityCheckResponse struct {
@@ -89,7 +90,7 @@ func (c *CCompatClient) CreateArtifact(ctx context.Context, group, artifactID st
 		return nil, err
 	}
 
-	var resp ccompatSchemaId
+	var resp ccompatSchemaID
 	if err := json.Unmarshal(respData, &resp); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
@@ -119,8 +120,9 @@ func (c *CCompatClient) CreateVersion(ctx context.Context, group, artifactID str
 		return nil, err
 	}
 
-	var resp ccompatSchemaId
-	if err := json.Unmarshal(respData, &resp); err != nil {
+	var resp ccompatSchemaID
+	err = json.Unmarshal(respData, &resp)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 

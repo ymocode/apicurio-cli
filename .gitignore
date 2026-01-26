@@ -1,5 +1,6 @@
-# Binaries
+# Binaries (but keep cmd/ source)
 bin/
+!cmd/
 apicurio-client
 *.exe
 *.dll

@@ -1,3 +1,4 @@
+// Package batch provides batch processing for schema validation and registration.
 package batch
 
 import (
@@ -18,35 +19,35 @@ import (
 
 // BatchResult represents the result of processing a single schema
 type BatchResult struct {
-	FilePath          string            `json:"file_path"`
-	Namespace         string            `json:"namespace"`
-	Name              string            `json:"name"`
-	Version           string            `json:"version"`
-	Status            string            `json:"status"` // success, failed, skipped
-	Action            string            `json:"action"` // validated, registered, etc.
-	CompatibilityType string            `json:"compatibility_type,omitempty"`
-	ChangeLevel       string                  `json:"change_level,omitempty"` // patch, minor, major
-	Errors            []string                `json:"errors,omitempty"`
-	Message           string                  `json:"message,omitempty"`
-	ValidationResult  *schema.ValidationResult `json:"validation_result,omitempty"` // Full validation details
+	ValidationResult  *schema.ValidationResult `json:"validation_result,omitempty"`
+	FilePath          string                   `json:"file_path"`
+	Namespace         string                   `json:"namespace"`
+	Name              string                   `json:"name"`
+	Version           string                   `json:"version"`
+	Status            string                   `json:"status"`
+	Action            string                   `json:"action"`
+	CompatibilityType string                   `json:"compatibility_type,omitempty"`
+	ChangeLevel       string                   `json:"change_level,omitempty"`
+	Message           string                   `json:"message,omitempty"`
+	Errors            []string                 `json:"errors,omitempty"`
 }
 
 // BatchSummary represents the overall summary of batch processing
 type BatchSummary struct {
-	Total       int            `json:"total"`
-	Success     int            `json:"success"`
-	Failed      int            `json:"failed"`
-	Skipped     int            `json:"skipped"`
-	Results     []BatchResult  `json:"results"`
-	FailedFiles []string       `json:"failed_files,omitempty"`
+	Results     []BatchResult `json:"results"`
+	FailedFiles []string      `json:"failed_files,omitempty"`
+	Total       int           `json:"total"`
+	Success     int           `json:"success"`
+	Failed      int           `json:"failed"`
+	Skipped     int           `json:"skipped"`
 }
 
 // BatchOptions contains options for batch processing
 type BatchOptions struct {
 	Directory       string
 	Pattern         string
-	Recursive       bool
 	Parallel        int
+	Recursive       bool
 	ContinueOnError bool
 	DryRun          bool
 }
@@ -290,19 +291,19 @@ func formatBatchMarkdown(summary *BatchSummary) (string, error) {
 
 	// Map results to template format - include ALL fields from BatchResult
 	type TemplateResult struct {
-		File             string
-		FQN              string
-		Namespace        string
-		Name             string
-		Version          string
-		Status           string
-		Action           string
+		ValidationResult  *schema.ValidationResult
+		Action            string
+		Namespace         string
+		Name              string
+		Version           string
+		Status            string
+		File              string
 		CompatibilityType string
-		ChangeLevel      string
-		Message          string
-		Errors           []string
-		ValidationResult *schema.ValidationResult
-		DurationMs       int64
+		ChangeLevel       string
+		Message           string
+		FQN               string
+		Errors            []string
+		DurationMs        int64
 	}
 
 	templateResults := make([]TemplateResult, len(summary.Results))
@@ -317,7 +318,7 @@ func formatBatchMarkdown(summary *BatchSummary) (string, error) {
 			Version:           r.Version,
 			Status:            r.Status,
 			Action:            r.Action,
-			CompatibilityType: string(r.CompatibilityType),
+			CompatibilityType: r.CompatibilityType,
 			ChangeLevel:       r.ChangeLevel,
 			Message:           r.Message,
 			Errors:            r.Errors,
@@ -328,25 +329,25 @@ func formatBatchMarkdown(summary *BatchSummary) (string, error) {
 
 	// Create data structure for template
 	data := struct {
-		Action           string
-		TotalFiles       int
-		SuccessCount     int
-		FailedCount      int
-		SkippedCount     int
-		SuccessRate      float64
-		TotalDurationMs  int64
-		AvgDurationMs    float64
-		Results          []TemplateResult
+		Action          string
+		Results         []TemplateResult
+		TotalFiles      int
+		SuccessCount    int
+		FailedCount     int
+		SkippedCount    int
+		SuccessRate     float64
+		TotalDurationMs int64
+		AvgDurationMs   float64
 	}{
-		Action:           action,
-		TotalFiles:       summary.Total,
-		SuccessCount:     summary.Success,
-		FailedCount:      summary.Failed,
-		SkippedCount:     summary.Skipped,
-		SuccessRate:      successRate,
-		TotalDurationMs:  totalDurationMs,
-		AvgDurationMs:    avgDurationMs,
-		Results:          templateResults,
+		Action:          action,
+		TotalFiles:      summary.Total,
+		SuccessCount:    summary.Success,
+		FailedCount:     summary.Failed,
+		SkippedCount:    summary.Skipped,
+		SuccessRate:     successRate,
+		TotalDurationMs: totalDurationMs,
+		AvgDurationMs:   avgDurationMs,
+		Results:         templateResults,
 	}
 
 	var buf bytes.Buffer

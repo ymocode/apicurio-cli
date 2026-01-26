@@ -1,3 +1,4 @@
+// Package operations provides core business logic for schema operations.
 package operations
 
 import (
@@ -16,29 +17,29 @@ import (
 
 // RegistrationResult represents the result of registering a schema
 type RegistrationResult struct {
-	Success   bool
+	Error         error
+	Version       string
+	CreatedOn     string
+	GlobalID      int64
+	ContentID     int64
+	Success       bool
 	IsNewArtifact bool
-	Version   string
-	GlobalID  int64
-	ContentID int64
-	CreatedOn string
-	Error     error
 }
 
 // InternalValidationResult represents the result of validating a schema
 type InternalValidationResult struct {
-	Success            bool
-	IsNew              bool
-	CurrentVersion     string
-	ExpectedVersion    string
-	CurrentNamespace   string
-	ProposedNamespace  string
-	ExpectedNamespace  string
-	CompatibilityType  schema.CompatibilityType
-	ChangeLevel        string
-	Differences        []string
-	IsCompatible       bool
-	ValidationErrors   []string
+	CurrentVersion    string
+	ExpectedVersion   string
+	CurrentNamespace  string
+	ProposedNamespace string
+	ExpectedNamespace string
+	CompatibilityType schema.CompatibilityType
+	ChangeLevel       string
+	Differences       []string
+	ValidationErrors  []string
+	Success           bool
+	IsNew             bool
+	IsCompatible      bool
 }
 
 // RegisterSchema is the core registration logic shared by single and batch operations
@@ -82,7 +83,8 @@ func RegisterSchema(ctx context.Context, client registry.RegistryClient, cfg *co
 		// If artifact exists (409), try creating a new version
 		// Note: V3 with FIND_OR_CREATE_VERSION won't reach here for duplicates
 		if isConflictError(err) {
-			versionMetadata, err := client.CreateVersion(ctx, group, artifactID, s)
+			var versionMetadata *registry.VersionMetadata
+			versionMetadata, err = client.CreateVersion(ctx, group, artifactID, s)
 			if err != nil {
 				result.Error = fmt.Errorf("failed to create new version: %w", err)
 				return result
@@ -111,10 +113,10 @@ func RegisterSchema(ctx context.Context, client registry.RegistryClient, cfg *co
 // ValidateSchema is the core validation logic shared by single and batch operations
 func ValidateSchema(ctx context.Context, client registry.RegistryClient, cfg *config.Config, s *schema.AvroSchema) InternalValidationResult {
 	result := InternalValidationResult{
-		Success:           false,
-		IsNew:             false,
-		ValidationErrors:  []string{},
-		Differences:       []string{},
+		Success:          false,
+		IsNew:            false,
+		ValidationErrors: []string{},
+		Differences:      []string{},
 	}
 
 	group := cfg.GetGroup(s.Namespace)
@@ -129,7 +131,7 @@ func ValidateSchema(ctx context.Context, client registry.RegistryClient, cfg *co
 			expectedVersion := config.InitialVersion
 			if nsVer := extractNamespaceVersion(s.Namespace); nsVer != "" && nsVer != "v1" {
 				var num int
-				fmt.Sscanf(nsVer[1:], "%d", &num)
+				_, _ = fmt.Sscanf(nsVer[1:], "%d", &num)
 				if num > 1 {
 					expectedVersion = fmt.Sprintf("%d.0.0", num)
 				}
@@ -306,7 +308,8 @@ func parseSchemaContent(contentResp interface{}, version string) (*schema.AvroSc
 
 	// Parse raw JSON to extract fields
 	var rawData map[string]interface{}
-	if err := json.Unmarshal(contentBytes, &rawData); err != nil {
+	err = json.Unmarshal(contentBytes, &rawData)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse raw data: %w", err)
 	}
 
@@ -381,7 +384,7 @@ func incrementNamespaceVersion(version string) string {
 	// Extract number from version string
 	numStr := version[1:]
 	var num int
-	fmt.Sscanf(numStr, "%d", &num)
+	_, _ = fmt.Sscanf(numStr, "%d", &num)
 
 	// Increment and return
 	return fmt.Sprintf("v%d", num+1)

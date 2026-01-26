@@ -1,3 +1,4 @@
+// Package config provides configuration management for apicurio-client.
 package config
 
 import (
@@ -17,19 +18,19 @@ const (
 )
 
 type Config struct {
-	RegistryURL    string
-	APIVersion     APIVersion
-	Group          string
-	ArtifactID     string
-	AuthMode       string
-	Username       string
-	Password       string
-	KeycloakURL    string
-	ClientID       string
-	ClientSecret   string
-	Realm          string
-	Insecure       bool
-	SchemaFile     string
+	Password     string
+	APIVersion   APIVersion
+	Group        string
+	ArtifactID   string
+	AuthMode     string
+	Username     string
+	RegistryURL  string
+	KeycloakURL  string
+	ClientID     string
+	ClientSecret string
+	Realm        string
+	SchemaFile   string
+	Insecure     bool
 }
 
 func InitConfig() {
@@ -59,19 +60,19 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &Config{
-		RegistryURL:    viper.GetString("registry_url"),
-		APIVersion:     APIVersion(apiVersion),
-		Group:          viper.GetString("group"),
-		ArtifactID:     viper.GetString("artifact_id"),
-		AuthMode:       viper.GetString("auth"),
-		Username:       viper.GetString("username"),
-		Password:       viper.GetString("password"),
-		KeycloakURL:    viper.GetString("keycloak_url"),
-		ClientID:       viper.GetString("client_id"),
-		ClientSecret:   viper.GetString("client_secret"),
-		Realm:          viper.GetString("realm"),
-		Insecure:       viper.GetBool("insecure"),
-		SchemaFile:     viper.GetString("file"),
+		RegistryURL:  viper.GetString("registry_url"),
+		APIVersion:   APIVersion(apiVersion),
+		Group:        viper.GetString("group"),
+		ArtifactID:   viper.GetString("artifact_id"),
+		AuthMode:     viper.GetString("auth"),
+		Username:     viper.GetString("username"),
+		Password:     viper.GetString("password"),
+		KeycloakURL:  viper.GetString("keycloak_url"),
+		ClientID:     viper.GetString("client_id"),
+		ClientSecret: viper.GetString("client_secret"),
+		Realm:        viper.GetString("realm"),
+		Insecure:     viper.GetBool("insecure"),
+		SchemaFile:   viper.GetString("file"),
 	}, nil
 }
 
