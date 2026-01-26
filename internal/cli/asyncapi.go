@@ -1,3 +1,4 @@
+// Package cli provides cobra commands for the apicurio-client CLI.
 package cli
 
 import (
@@ -83,7 +84,7 @@ func init() {
 	asyncapiValidateCmd.Flags().String("version", "", "Override version from document")
 	asyncapiValidateCmd.Flags().String("format", "json", "Output format: json, table, summary")
 	asyncapiValidateCmd.Flags().StringP("output", "o", "", "Output file path (default: stdout)")
-	asyncapiValidateCmd.MarkFlagRequired("file")
+	_ = asyncapiValidateCmd.MarkFlagRequired("file")
 
 	// AsyncAPI register flags
 	asyncapiRegisterCmd.Flags().String("file", "", "Path to AsyncAPI YAML file (required)")
@@ -91,7 +92,7 @@ func init() {
 	asyncapiRegisterCmd.Flags().String("format", "json", "Output format: json, table, summary")
 	asyncapiRegisterCmd.Flags().StringP("output", "o", "", "Output file path (default: stdout)")
 	asyncapiRegisterCmd.Flags().Bool("skip-validation", false, "Skip validation before registration")
-	asyncapiRegisterCmd.MarkFlagRequired("file")
+	_ = asyncapiRegisterCmd.MarkFlagRequired("file")
 
 	// AsyncAPI get flags
 	asyncapiGetCmd.Flags().String("version", "branch=latest", "Version to retrieve (default: branch=latest)")
@@ -232,7 +233,8 @@ func runAsyncAPIRegister(cmd *cobra.Command, args []string) error {
 	// Validate before registration (unless skipped)
 	if !skipValidation {
 		log.Info("Validating before registration")
-		valResult, err := asyncapi.Validate(ctx, client, spec, groupID, artifactID)
+		var valResult *asyncapi.ValidationResult
+		valResult, err = asyncapi.Validate(ctx, client, spec, groupID, artifactID)
 		if err != nil {
 			return fmt.Errorf("validation failed: %w", err)
 		}
@@ -359,7 +361,8 @@ func runAsyncAPIGet(cmd *cobra.Command, args []string) error {
 
 	// Parse the content as JSON
 	var doc map[string]interface{}
-	if err := json.Unmarshal(content, &doc); err != nil {
+	err = json.Unmarshal(content, &doc)
+	if err != nil {
 		return fmt.Errorf("failed to parse dereferenced content: %w", err)
 	}
 

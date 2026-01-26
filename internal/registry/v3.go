@@ -89,7 +89,7 @@ func (c *V3Client) CreateArtifact(ctx context.Context, group, artifactID string,
 	reqConfig := &groups.ItemArtifactsRequestBuilderPostRequestConfiguration{
 		QueryParameters: &groups.ItemArtifactsRequestBuilderPostQueryParameters{
 			IfExistsAsIfArtifactExists: &ifExists,
-			Canonical:                   &canonical,
+			Canonical:                  &canonical,
 		},
 	}
 	log.Debug("Using ifExists=FIND_OR_CREATE_VERSION, canonical=true")
@@ -187,10 +187,10 @@ func (c *V3Client) GetArtifactMetadata(ctx context.Context, group, artifactID st
 	metadata := convertV3ArtifactMetadata(artifactMeta)
 	metadata.Version = safeString(versionMeta.GetVersion())
 	if versionMeta.GetGlobalId() != nil {
-		metadata.GlobalID = int64(*versionMeta.GetGlobalId())
+		metadata.GlobalID = *versionMeta.GetGlobalId()
 	}
 	if versionMeta.GetContentId() != nil {
-		metadata.ContentID = int64(*versionMeta.GetContentId())
+		metadata.ContentID = *versionMeta.GetContentId()
 	}
 	if versionMeta.GetCreatedOn() != nil {
 		metadata.CreatedOn = formatKiotaTime(versionMeta.GetCreatedOn())
@@ -593,10 +593,10 @@ func convertV3CreateArtifactResponse(resp models.CreateArtifactResponseable) *Ar
 	}
 
 	if version.GetGlobalId() != nil {
-		metadata.GlobalID = int64(*version.GetGlobalId())
+		metadata.GlobalID = *version.GetGlobalId()
 	}
 	if version.GetContentId() != nil {
-		metadata.ContentID = int64(*version.GetContentId())
+		metadata.ContentID = *version.GetContentId()
 	}
 	if artifact.GetCreatedOn() != nil {
 		metadata.CreatedOn = formatKiotaTime(artifact.GetCreatedOn())
@@ -632,10 +632,10 @@ func convertV3VersionMetadata(meta models.VersionMetaDataable) *VersionMetadata 
 	}
 
 	if meta.GetGlobalId() != nil {
-		metadata.GlobalID = int64(*meta.GetGlobalId())
+		metadata.GlobalID = *meta.GetGlobalId()
 	}
 	if meta.GetContentId() != nil {
-		metadata.ContentID = int64(*meta.GetContentId())
+		metadata.ContentID = *meta.GetContentId()
 	}
 	if meta.GetCreatedOn() != nil {
 		metadata.CreatedOn = formatKiotaTime(meta.GetCreatedOn())

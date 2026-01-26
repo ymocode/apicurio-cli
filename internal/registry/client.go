@@ -12,22 +12,22 @@ import (
 type ArtifactMetadata struct {
 	ID          string
 	Version     string
-	GlobalID    int64
-	ContentID   int64
 	CreatedOn   string
 	ModifiedOn  string
 	Name        string
 	Description string
 	GroupID     string
+	GlobalID    int64
+	ContentID   int64
 }
 
 // VersionMetadata represents metadata for a specific version
 type VersionMetadata struct {
 	Version    string
-	GlobalID   int64
-	ContentID  int64
 	CreatedOn  string
 	ModifiedOn string
+	GlobalID   int64
+	ContentID  int64
 }
 
 // SystemInfo represents system information from the registry

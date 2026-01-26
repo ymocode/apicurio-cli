@@ -29,7 +29,7 @@ func init() {
 	registerCmd.Flags().String("format", "json", "Output format: json, table, summary, markdown")
 	registerCmd.Flags().StringP("output", "o", "", "Output file path (default: stdout)")
 
-	registerCmd.MarkFlagRequired("file")
+	_ = registerCmd.MarkFlagRequired("file")
 }
 
 func runRegister(cmd *cobra.Command, args []string) error {

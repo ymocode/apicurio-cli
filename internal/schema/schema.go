@@ -1,3 +1,4 @@
+// Package schema provides Avro schema parsing, validation and comparison.
 package schema
 
 import (
@@ -13,24 +14,19 @@ import (
 
 // AvroSchema wraps the official avro.Schema with custom metadata
 type AvroSchema struct {
-	// Custom fields (not part of standard Avro)
-	Version   string `json:"version"`
-	Namespace string `json:"namespace"`
-	Name      string `json:"name"`
-
-	// Official Avro schema from hamba/avro
-	Schema avro.Schema `json:"-"`
-
-	// Raw JSON data (for backward compatibility)
-	RawData map[string]interface{} `json:"-"`
+	Schema    avro.Schema            `json:"-"`
+	RawData   map[string]interface{} `json:"-"`
+	Version   string                 `json:"version"`
+	Namespace string                 `json:"namespace"`
+	Name      string                 `json:"name"`
 }
 
-// Deprecated: Use official avro.Schema field types instead
+// AvroField represents an Avro record field. Deprecated: Use official avro.Schema field types instead.
 type AvroField struct {
-	Name    string      `json:"name"`
 	Type    interface{} `json:"type"`
-	Doc     string      `json:"doc,omitempty"`
 	Default interface{} `json:"default,omitempty"`
+	Name    string      `json:"name"`
+	Doc     string      `json:"doc,omitempty"`
 }
 
 type CompatibilityType string
@@ -43,18 +39,18 @@ const (
 )
 
 type ValidationResult struct {
-	FQN                string            `json:"fqn"`
-	CurrentVersion     string            `json:"current_version"`
-	ProposedVersion    string            `json:"proposed_version"`
-	ExpectedVersion    string            `json:"expected_version"`
-	CurrentNamespace   string            `json:"current_namespace,omitempty"`
-	ProposedNamespace  string            `json:"proposed_namespace,omitempty"`
-	ExpectedNamespace  string            `json:"expected_namespace,omitempty"`
-	IsCompatible       bool              `json:"is_compatible"`
-	CompatibilityType  CompatibilityType `json:"compatibility_type"`
-	ChangeLevel        string            `json:"change_level,omitempty"` // "patch" (metadata), "minor" (structural), "major" (breaking)
-	Differences        []string          `json:"differences"`
-	ValidationErrors   []string          `json:"validation_errors"`
+	FQN               string            `json:"fqn"`
+	CurrentVersion    string            `json:"current_version"`
+	ProposedVersion   string            `json:"proposed_version"`
+	ExpectedVersion   string            `json:"expected_version"`
+	CurrentNamespace  string            `json:"current_namespace,omitempty"`
+	ProposedNamespace string            `json:"proposed_namespace,omitempty"`
+	ExpectedNamespace string            `json:"expected_namespace,omitempty"`
+	CompatibilityType CompatibilityType `json:"compatibility_type"`
+	ChangeLevel       string            `json:"change_level,omitempty"`
+	Differences       []string          `json:"differences"`
+	ValidationErrors  []string          `json:"validation_errors"`
+	IsCompatible      bool              `json:"is_compatible"`
 }
 
 func ParseAvroSchema(filePath string) (*AvroSchema, error) {
@@ -65,7 +61,8 @@ func ParseAvroSchema(filePath string) (*AvroSchema, error) {
 
 	// Parse raw JSON to extract custom fields (version, namespace, name)
 	var rawData map[string]interface{}
-	if err := json.Unmarshal(data, &rawData); err != nil {
+	err = json.Unmarshal(data, &rawData)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse schema JSON: %w", err)
 	}
 
@@ -79,7 +76,8 @@ func ParseAvroSchema(filePath string) (*AvroSchema, error) {
 		return nil, fmt.Errorf("schema must contain a 'version' field with semantic version")
 	}
 
-	if _, err := semver.NewVersion(version); err != nil {
+	_, err = semver.NewVersion(version)
+	if err != nil {
 		return nil, fmt.Errorf("invalid semantic version '%s': %w", version, err)
 	}
 
@@ -208,43 +206,6 @@ func CompareSchemas(oldSchema, newSchema *AvroSchema) (string, []string) {
 	}
 
 	return changeLevel, differences
-}
-
-// compareFields compares two Avro fields and returns differences
-func compareFields(fieldName string, oldField, newField AvroField, pathPrefix string) ([]string, bool, bool) {
-	differences := []string{}
-	hasBreaking := false
-	hasStructural := false
-
-	fullPath := fieldName
-	if pathPrefix != "" {
-		fullPath = pathPrefix + "." + fieldName
-	}
-
-	// Compare doc
-	if oldField.Doc != newField.Doc {
-		differences = append(differences, fmt.Sprintf("~ %s.doc: %v → %v",
-			fullPath, formatValue(oldField.Doc), formatValue(newField.Doc)))
-	}
-
-	// Compare default
-	if !equalValues(oldField.Default, newField.Default) {
-		differences = append(differences, fmt.Sprintf("~ %s.default: %v → %v",
-			fullPath, formatValue(oldField.Default), formatValue(newField.Default)))
-		hasStructural = true
-	}
-
-	// Compare types
-	typeDiffs, typeBreaking, typeStructural := compareTypes(fullPath, oldField.Type, newField.Type)
-	differences = append(differences, typeDiffs...)
-	if typeBreaking {
-		hasBreaking = true
-	}
-	if typeStructural {
-		hasStructural = true
-	}
-
-	return differences, hasBreaking, hasStructural
 }
 
 // compareTypes compares two Avro types recursively
@@ -451,87 +412,6 @@ func isOptionalFieldType(fieldMap map[string]interface{}) bool {
 	return isOptionalType(fieldType)
 }
 
-// toHumanReadablePath converts JSON pointer paths to human-readable field paths
-// Example: /fields/0/type/fields/3/type/doc → processContext.processingStatus.doc
-func toHumanReadablePath(path string, schemaData map[string]interface{}) string {
-	if path == "" || path == "/" {
-		return "[Schema]"
-	}
-
-	// Remove leading slash
-	path = strings.TrimPrefix(path, "/")
-	parts := strings.Split(path, "/")
-
-	result := []string{}
-	current := schemaData
-
-	for i := 0; i < len(parts); i++ {
-		part := parts[i]
-
-		// Handle top-level properties
-		if part == "doc" {
-			if len(result) == 0 {
-				result = append(result, "[Schema]")
-			}
-			result = append(result, "doc")
-			continue
-		}
-
-		if part == "fields" {
-			// Next part should be an index
-			if i+1 < len(parts) {
-				i++
-				idx := 0
-				fmt.Sscanf(parts[i], "%d", &idx)
-
-				// Get the field name at this index
-				if fields, ok := current["fields"].([]interface{}); ok && idx < len(fields) {
-					if fieldMap, ok := fields[idx].(map[string]interface{}); ok {
-						if name, ok := fieldMap["name"].(string); ok {
-							result = append(result, name)
-							// Update current to this field's type for nested navigation
-							if fieldType, ok := fieldMap["type"].(map[string]interface{}); ok {
-								current = fieldType
-							}
-							continue
-						}
-					}
-				}
-				// Fallback if we can't resolve the name
-				result = append(result, fmt.Sprintf("field[%d]", idx))
-			}
-			continue
-		}
-
-		if part == "type" {
-			// Don't add "type" to the path, just update current
-			if typeData, ok := current["type"].(map[string]interface{}); ok {
-				current = typeData
-			}
-			continue
-		}
-
-		if part == "symbols" {
-			result = append(result, "symbols")
-			continue
-		}
-
-		if part == "items" {
-			result = append(result, "items")
-			continue
-		}
-
-		// For other properties, add them as-is
-		result = append(result, part)
-	}
-
-	if len(result) == 0 {
-		return path
-	}
-
-	return strings.Join(result, ".")
-}
-
 // formatValue formats a value for display, truncating long strings
 func formatValue(val interface{}) string {
 	switch v := val.(type) {
@@ -545,74 +425,6 @@ func formatValue(val interface{}) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
-}
-
-// isMetadataPath checks if a JSON path is a metadata field (doc, aliases, default)
-func isMetadataPath(path string) bool {
-	// Check if path ends with /doc, /aliases, or /default
-	return strings.HasSuffix(path, "/doc") ||
-		strings.HasSuffix(path, "/aliases") ||
-		strings.HasSuffix(path, "/default") ||
-		strings.Contains(path, "/doc/") ||
-		strings.Contains(path, "/aliases/") ||
-		strings.Contains(path, "/default/")
-}
-
-// isBreakingChange determines if a change is breaking (requires major version bump)
-func isBreakingChange(opType, path string) bool {
-	// Removing fields is always breaking
-	if opType == "remove" && strings.Contains(path, "/fields/") {
-		return true
-	}
-
-	// Adding required fields (no default) is breaking
-	if opType == "add" && strings.Contains(path, "/fields/") && !strings.Contains(path, "/default") {
-		return true
-	}
-
-	// Type changes are usually breaking
-	if strings.HasSuffix(path, "/type") || strings.Contains(path, "/type/") {
-		return true
-	}
-
-	// Changing field names is breaking
-	if strings.HasSuffix(path, "/name") && strings.Contains(path, "/fields/") {
-		return true
-	}
-
-	return false
-}
-
-// getValueAtPath retrieves a value from a JSON object at the given JSON Pointer path
-func getValueAtPath(data map[string]interface{}, path string) interface{} {
-	if path == "" {
-		return data
-	}
-
-	// Remove leading slash
-	path = strings.TrimPrefix(path, "/")
-	parts := strings.Split(path, "/")
-
-	var current interface{} = data
-	for _, part := range parts {
-		switch v := current.(type) {
-		case map[string]interface{}:
-			current = v[part]
-		case []interface{}:
-			// Handle array indices
-			var idx int
-			fmt.Sscanf(part, "%d", &idx)
-			if idx >= 0 && idx < len(v) {
-				current = v[idx]
-			} else {
-				return nil
-			}
-		default:
-			return nil
-		}
-	}
-
-	return current
 }
 
 func isOptionalType(fieldType interface{}) bool {

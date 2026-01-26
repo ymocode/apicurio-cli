@@ -33,9 +33,9 @@ const (
 
 // Timeout constants for operations
 const (
-	DefaultOperationTimeout = 30 * time.Second  // For single operations
-	BatchOperationTimeout   = 5 * time.Minute   // For batch operations
+	DefaultOperationTimeout = 30 * time.Second // For single operations
+	BatchOperationTimeout   = 5 * time.Minute  // For batch operations
 )
 
-// Initial version for new schemas
+// InitialVersion is the starting version for new schemas.
 const InitialVersion = "1.0.0"

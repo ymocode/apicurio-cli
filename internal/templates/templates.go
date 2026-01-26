@@ -1,3 +1,4 @@
+// Package templates provides output templates for CLI formatting.
 package templates
 
 import (

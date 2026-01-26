@@ -1,3 +1,4 @@
+// Package output provides formatters for CLI output in various formats.
 package output
 
 import (
@@ -12,40 +13,40 @@ import (
 
 // RegistrationOutput represents registration result output
 type RegistrationOutput struct {
-	Success     bool   `json:"success"`
-	Action      string `json:"action"`
-	FQN         string `json:"fqn"`
-	Group       string `json:"group"`
-	ArtifactID  string `json:"artifact_id"`
-	Version     string `json:"version"`
-	GlobalID    int64  `json:"global_id"`
-	ContentID   int64  `json:"content_id"`
-	CreatedOn   string `json:"created_on"`
-	DurationMs  int64  `json:"duration_ms"`
-	IsNewArtifact bool `json:"-"` // Internal field
+	Action        string `json:"action"`
+	FQN           string `json:"fqn"`
+	Group         string `json:"group"`
+	ArtifactID    string `json:"artifact_id"`
+	Version       string `json:"version"`
+	CreatedOn     string `json:"created_on"`
+	GlobalID      int64  `json:"global_id"`
+	ContentID     int64  `json:"content_id"`
+	DurationMs    int64  `json:"duration_ms"`
+	Success       bool   `json:"success"`
+	IsNewArtifact bool   `json:"-"`
 }
 
 // DryRunOutput represents dry-run result output
 type DryRunOutput struct {
-	DryRun     bool     `json:"dry_run"`
-	Success    bool     `json:"success"`
 	FQN        string   `json:"fqn"`
 	Group      string   `json:"group"`
 	ArtifactID string   `json:"artifact_id"`
 	Version    string   `json:"version"`
-	DurationMs int64    `json:"duration_ms"`
 	Errors     []string `json:"errors,omitempty"`
+	DurationMs int64    `json:"duration_ms"`
+	DryRun     bool     `json:"dry_run"`
+	Success    bool     `json:"success"`
 }
 
 // SystemInfoOutput represents system information output
 type SystemInfoOutput struct {
 	RegistryURL    string `json:"registry_url"`
 	APIVersion     string `json:"api_version"`
-	ResponseTimeMs int64  `json:"response_time_ms"`
 	Name           string `json:"name"`
 	Version        string `json:"version"`
 	Description    string `json:"description"`
 	BuiltOn        string `json:"built_on"`
+	ResponseTimeMs int64  `json:"response_time_ms"`
 }
 
 // PrintRegistrationResult prints registration result in specified format
@@ -136,13 +137,13 @@ func PrintDryRunResult(output DryRunOutput, format string, outputPath string) er
 	case config.FormatMarkdown:
 		// Map DryRunOutput to validation template structure
 		validationData := struct {
-			Valid      bool
 			FQN        string
 			Group      string
 			ArtifactID string
 			Version    string
 			Errors     []string
 			DurationMs int64
+			Valid      bool
 		}{
 			Valid:      output.Success,
 			FQN:        output.FQN,
@@ -214,7 +215,7 @@ func formatDryRunSummary(output DryRunOutput) string {
 	return result
 }
 
-// PrintHealthResult prints health check result in specified format
+// PrintSystemInfoResult prints system info result in specified format.
 func PrintSystemInfoResult(output SystemInfoOutput, format string, outputPath string) error {
 	var content string
 
@@ -291,29 +292,29 @@ func PrintValidationResult(result schema.ValidationResult, format string, output
 
 		// Map ValidationResult to template structure with ALL fields from JSON
 		validationData := struct {
-			Valid              bool
-			FQN                string
-			Group              string
-			ArtifactID         string
-			CurrentVersion     string
-			ProposedVersion    string
-			ExpectedVersion    string
-			CompatibilityType  string
-			Differences        []string
-			ValidationErrors   []string
-			DurationMs         int64
+			FQN               string
+			Group             string
+			ArtifactID        string
+			CurrentVersion    string
+			ProposedVersion   string
+			ExpectedVersion   string
+			CompatibilityType string
+			Differences       []string
+			ValidationErrors  []string
+			DurationMs        int64
+			Valid             bool
 		}{
-			Valid:              result.IsCompatible,
-			FQN:                result.FQN,
-			Group:              group,
-			ArtifactID:         artifactID,
-			CurrentVersion:     result.CurrentVersion,
-			ProposedVersion:    result.ProposedVersion,
-			ExpectedVersion:    result.ExpectedVersion,
-			CompatibilityType:  string(result.CompatibilityType),
-			Differences:        result.Differences,
-			ValidationErrors:   result.ValidationErrors,
-			DurationMs:         0, // Not tracked in ValidationResult
+			Valid:             result.IsCompatible,
+			FQN:               result.FQN,
+			Group:             group,
+			ArtifactID:        artifactID,
+			CurrentVersion:    result.CurrentVersion,
+			ProposedVersion:   result.ProposedVersion,
+			ExpectedVersion:   result.ExpectedVersion,
+			CompatibilityType: string(result.CompatibilityType),
+			Differences:       result.Differences,
+			ValidationErrors:  result.ValidationErrors,
+			DurationMs:        0, // Not tracked in ValidationResult
 		}
 		var buf bytes.Buffer
 		if err := templates.ValidationMarkdown.Execute(&buf, validationData); err != nil {
@@ -415,16 +416,16 @@ func FormatValidationSummary(result schema.ValidationResult) (string, error) {
 
 // AsyncAPIValidationOutput represents AsyncAPI validation result output
 type AsyncAPIValidationOutput struct {
-	Valid           bool     `json:"valid"`
 	Group           string   `json:"group"`
 	ArtifactID      string   `json:"artifact_id"`
 	ProposedVersion string   `json:"proposed_version"`
 	CurrentVersion  string   `json:"current_version,omitempty"`
-	IsNew           bool     `json:"is_new"`
-	IsIdentical     bool     `json:"is_identical"`
 	Errors          []string `json:"errors,omitempty"`
 	Warnings        []string `json:"warnings,omitempty"`
 	MissingRefs     []string `json:"missing_refs,omitempty"`
+	Valid           bool     `json:"valid"`
+	IsNew           bool     `json:"is_new"`
+	IsIdentical     bool     `json:"is_identical"`
 }
 
 // PrintAsyncAPIValidationResult prints AsyncAPI validation result in specified format
