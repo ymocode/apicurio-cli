@@ -1,11 +1,11 @@
 # Apicurio Registry CLI Client
 
-[![CI](https://github.com/ymocode/apicurio-client/actions/workflows/ci.yml/badge.svg)](https://github.com/ymocode/apicurio-client/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/ymocode/apicurio-client?logo=github&sort=semver)](https://github.com/ymocode/apicurio-client/releases/latest)
-[![Go Version](https://img.shields.io/github/go-mod/go-version/ymocode/apicurio-client?logo=go)](https://go.dev/)
-[![Go Report Card](https://goreportcard.com/badge/github.com/ymocode/apicurio-client)](https://goreportcard.com/report/github.com/ymocode/apicurio-client)
-[![GoDoc](https://pkg.go.dev/badge/github.com/ymocode/apicurio-client)](https://pkg.go.dev/github.com/ymocode/apicurio-client)
-[![License](https://img.shields.io/github/license/ymocode/apicurio-client)](LICENSE)
+[![CI](https://github.com/ymocode/apicurio-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/ymocode/apicurio-cli/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/ymocode/apicurio-cli?logo=github&sort=semver)](https://github.com/ymocode/apicurio-cli/releases/latest)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/ymocode/apicurio-cli?logo=go)](https://go.dev/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/ymocode/apicurio-cli)](https://goreportcard.com/report/github.com/ymocode/apicurio-cli)
+[![GoDoc](https://pkg.go.dev/badge/github.com/ymocode/apicurio-cli)](https://pkg.go.dev/github.com/ymocode/apicurio-cli)
+[![License](https://img.shields.io/github/license/ymocode/apicurio-cli)](LICENSE)
 
 Production-ready Go CLI for Apicurio Registry 3.x with semantic versioning, batch operations, and multi-API support.
 
