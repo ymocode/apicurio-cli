@@ -9,7 +9,7 @@ LDFLAGS=-ldflags "-X main.Version=$(VERSION)"
 LDFLAGS_TINY=-ldflags "-s -w -X main.Version=$(VERSION)"
 
 # GitLab Package Registry settings
-GITLAB_URL=https://uxlpgitlab01.centrisag.ch
+GITLAB_URL=""
 GITLAB_PROJECT_ID=3998
 GITLAB_TOKEN?=$(PRIVATE_TOKEN)
 

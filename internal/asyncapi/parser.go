@@ -121,7 +121,7 @@ func extractReferences(doc asyncAPIDocument) ([]registry.ArtifactReference, erro
 }
 
 // parseReference parses a schema reference in format "groupId/artifactId:version"
-// Example: "ch.centrisag.avro.ph.policy.v1/RequestPolicyProductBasicInsuranceChange:1.0.0"
+// Example: "com.acme.avro.ph.policy.v1/RequestPolicyProductBasicInsuranceChange:1.0.0"
 func parseReference(refStr string) (*registry.ArtifactReference, error) {
 	// Split by "/" to get groupId and rest
 	slashIdx := strings.LastIndex(refStr, "/")

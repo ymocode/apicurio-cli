@@ -5,7 +5,7 @@
 [![Go Version](https://img.shields.io/github/go-mod/go-version/ymocode/apicurio-cli?logo=go)](https://go.dev/)
 [![Go Report Card](https://goreportcard.com/badge/github.com/ymocode/apicurio-cli)](https://goreportcard.com/report/github.com/ymocode/apicurio-cli)
 [![GoDoc](https://pkg.go.dev/badge/github.com/ymocode/apicurio-cli)](https://pkg.go.dev/github.com/ymocode/apicurio-cli)
-[![License](https://img.shields.io/github/license/ymocode/apicurio-cli)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Production-ready Go CLI for Apicurio Registry 3.x with semantic versioning, batch operations, and multi-API support.
 

@@ -361,7 +361,7 @@ func isNotFoundError(err error) bool {
 		strings.Contains(errStr, "http 404")
 }
 
-// extractNamespaceVersion extracts version from namespace (e.g., "ch.centrisag.avro.ph.policy.v1" → "v1")
+// extractNamespaceVersion extracts version from namespace (e.g., "com.acme.avro.ph.policy.v1" → "v1")
 func extractNamespaceVersion(namespace string) string {
 	parts := strings.Split(namespace, ".")
 	if len(parts) == 0 {
