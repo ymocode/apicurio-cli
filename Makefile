@@ -9,7 +9,7 @@ LDFLAGS=-ldflags "-X main.Version=$(VERSION)"
 LDFLAGS_TINY=-ldflags "-s -w -X main.Version=$(VERSION)"
 
 # GitLab Package Registry settings
-GITLAB_URL=""
+GITLAB_URL?=
 GITLAB_PROJECT_ID=3998
 GITLAB_TOKEN?=$(PRIVATE_TOKEN)
 
@@ -40,6 +40,7 @@ build-all: ## Build for all platforms
 	GOOS=windows GOARCH=arm64 go build $(LDFLAGS) -o $(BUILD_DIR)/$(BINARY_NAME)-windows-arm64.exe $(CMD_PATH)
 
 deploy: build-tiny ## Build tiny and upload to GitLab Package Registry
+	@if [ -z "$(GITLAB_URL)" ]; then echo "Error: GITLAB_URL not set"; exit 1; fi
 	@if [ -z "$(GITLAB_TOKEN)" ]; then echo "Error: PRIVATE_TOKEN not set"; exit 1; fi
 	@echo "Uploading $(BINARY_NAME) version $(VERSION) to GitLab..."
 	curl --fail --header "PRIVATE-TOKEN: $(GITLAB_TOKEN)" \
