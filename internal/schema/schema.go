@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -286,8 +287,17 @@ func compareTypes(path string, oldType, newType interface{}) ([]string, bool, bo
 				hasBreaking = true
 			}
 		}
+	} else if oldUnion, oldIsUnion := oldType.([]interface{}); oldIsUnion {
+		// Union type, e.g. ["null", "string"] or ["null", {"type":"record", ...}].
+		if newUnion, newIsUnion := newType.([]interface{}); newIsUnion {
+			return compareUnions(path, oldUnion, newUnion)
+		}
+		// Union replaced by a non-union type.
+		differences = append(differences, fmt.Sprintf("~ %s: %v → %v",
+			path, fmt.Sprintf("%v", oldType), fmt.Sprintf("%v", newType)))
+		hasBreaking = true
 	} else {
-		// Simple type or union comparison
+		// Primitive type, or a change in type kind.
 		oldStr := fmt.Sprintf("%v", oldType)
 		newStr := fmt.Sprintf("%v", newType)
 		if oldStr != newStr {
@@ -298,6 +308,103 @@ func compareTypes(path string, oldType, newType interface{}) ([]string, bool, bo
 	}
 
 	return differences, hasBreaking, hasStructural
+}
+
+// compareUnions compares two Avro union types member-by-member, matching members
+// by type identity (see unionMemberKey) rather than by serialized content.
+// Members present in both unions are compared recursively, so changes nested
+// inside a union member (such as a record member's documentation) are graded by
+// the same rules as any other type. A removed member is breaking, an added
+// member is structural, and a member replaced by one of a different type is
+// breaking.
+func compareUnions(path string, oldUnion, newUnion []interface{}) ([]string, bool, bool) {
+	differences := []string{}
+	hasBreaking := false
+	hasStructural := false
+
+	oldMembers := indexUnionMembers(oldUnion)
+	newMembers := indexUnionMembers(newUnion)
+
+	var removed, added, matched []string
+	for key := range oldMembers {
+		if _, exists := newMembers[key]; exists {
+			matched = append(matched, key)
+		} else {
+			removed = append(removed, key)
+		}
+	}
+	for key := range newMembers {
+		if _, exists := oldMembers[key]; !exists {
+			added = append(added, key)
+		}
+	}
+	sort.Strings(removed)
+	sort.Strings(added)
+	sort.Strings(matched)
+
+	if len(removed) == 1 && len(added) == 1 {
+		differences = append(differences, fmt.Sprintf("~ %s: union member type changed from %s to %s",
+			path, removed[0], added[0]))
+		hasBreaking = true
+	} else {
+		for _, key := range removed {
+			differences = append(differences, fmt.Sprintf("- %s: union member %s removed", path, key))
+			hasBreaking = true
+		}
+		for _, key := range added {
+			differences = append(differences, fmt.Sprintf("+ %s: union member %s added", path, key))
+			hasStructural = true
+		}
+	}
+
+	for _, key := range matched {
+		memberDiffs, memberBreaking, memberStructural := compareTypes(path, oldMembers[key], newMembers[key])
+		differences = append(differences, memberDiffs...)
+		if memberBreaking {
+			hasBreaking = true
+		}
+		if memberStructural {
+			hasStructural = true
+		}
+	}
+
+	return differences, hasBreaking, hasStructural
+}
+
+// indexUnionMembers maps each union member to its identity key (see unionMemberKey).
+func indexUnionMembers(union []interface{}) map[string]interface{} {
+	result := make(map[string]interface{}, len(union))
+	for _, member := range union {
+		result[unionMemberKey(member)] = member
+	}
+	return result
+}
+
+// unionMemberKey returns a stable identity for a union member. Named complex
+// types (record, enum, fixed, error) are keyed by name so that edits to their
+// internal definition keep the same key; logical types are keyed by their
+// logicalType; all other types are keyed by their type name.
+func unionMemberKey(member interface{}) string {
+	switch m := member.(type) {
+	case string:
+		return m
+	case map[string]interface{}:
+		typeName, _ := m["type"].(string)
+		switch typeName {
+		case "record", "enum", "fixed", "error":
+			if name, ok := m["name"].(string); ok {
+				return typeName + ":" + name
+			}
+			return typeName
+		default:
+			if logical, ok := m["logicalType"].(string); ok {
+				return "logical:" + logical
+			}
+			return typeName
+		}
+	default:
+		return fmt.Sprintf("%v", member)
+	}
 }
 
 // extractFieldsMap extracts fields from a record type as a map by name
