@@ -29,7 +29,9 @@ type BatchResult struct {
 	CompatibilityType string                   `json:"compatibility_type,omitempty"`
 	ChangeLevel       string                   `json:"change_level,omitempty"`
 	Message           string                   `json:"message,omitempty"`
+	Labels            map[string]string        `json:"labels,omitempty"`
 	Errors            []string                 `json:"errors,omitempty"`
+	LabelsSkipped     bool                     `json:"labels_skipped,omitempty"`
 }
 
 // BatchSummary represents the overall summary of batch processing

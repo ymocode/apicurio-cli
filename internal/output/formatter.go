@@ -13,17 +13,19 @@ import (
 
 // RegistrationOutput represents registration result output
 type RegistrationOutput struct {
-	Action        string `json:"action"`
-	FQN           string `json:"fqn"`
-	Group         string `json:"group"`
-	ArtifactID    string `json:"artifact_id"`
-	Version       string `json:"version"`
-	CreatedOn     string `json:"created_on"`
-	GlobalID      int64  `json:"global_id"`
-	ContentID     int64  `json:"content_id"`
-	DurationMs    int64  `json:"duration_ms"`
-	Success       bool   `json:"success"`
-	IsNewArtifact bool   `json:"-"`
+	Action        string            `json:"action"`
+	FQN           string            `json:"fqn"`
+	Group         string            `json:"group"`
+	ArtifactID    string            `json:"artifact_id"`
+	Version       string            `json:"version"`
+	CreatedOn     string            `json:"created_on"`
+	Labels        map[string]string `json:"labels,omitempty"`
+	GlobalID      int64             `json:"global_id"`
+	ContentID     int64             `json:"content_id"`
+	DurationMs    int64             `json:"duration_ms"`
+	Success       bool              `json:"success"`
+	IsNewArtifact bool              `json:"-"`
+	LabelsSkipped bool              `json:"labels_skipped,omitempty"`
 }
 
 // DryRunOutput represents dry-run result output

@@ -24,6 +24,8 @@ type RegistrationResult struct {
 	ContentID     int64
 	Success       bool
 	IsNewArtifact bool
+	LabelsApplied map[string]string // labels written to the created version
+	LabelsSkipped bool              // labels requested but version was unchanged
 }
 
 // InternalValidationResult represents the result of validating a schema
@@ -42,8 +44,10 @@ type InternalValidationResult struct {
 	IsCompatible      bool
 }
 
-// RegisterSchema is the core registration logic shared by single and batch operations
-func RegisterSchema(ctx context.Context, client registry.RegistryClient, cfg *config.Config, s *schema.AvroSchema, skipValidation bool) RegistrationResult {
+// RegisterSchema is the core registration logic shared by single and batch operations.
+// Labels, when non-empty, are applied only to a newly created version; an unchanged
+// schema that resolves to an existing version keeps its labels untouched.
+func RegisterSchema(ctx context.Context, client registry.RegistryClient, cfg *config.Config, s *schema.AvroSchema, skipValidation bool, labels map[string]string) RegistrationResult {
 	result := RegistrationResult{Success: false}
 
 	group := cfg.GetGroup(s.Namespace)
@@ -73,18 +77,19 @@ func RegisterSchema(ctx context.Context, client registry.RegistryClient, cfg *co
 			result.GlobalID = existingMetadata.GlobalID
 			result.ContentID = existingMetadata.ContentID
 			result.CreatedOn = existingMetadata.CreatedOn
+			result.LabelsSkipped = len(labels) > 0
 			return result
 		}
 	}
 
 	// Try to create artifact first (V3 with FIND_OR_CREATE_VERSION will handle deduplication)
-	metadata, err := client.CreateArtifact(ctx, group, artifactID, s)
+	metadata, err := client.CreateArtifact(ctx, group, artifactID, s, labels)
 	if err != nil {
 		// If artifact exists (409), try creating a new version
 		// Note: V3 with FIND_OR_CREATE_VERSION won't reach here for duplicates
 		if isConflictError(err) {
 			var versionMetadata *registry.VersionMetadata
-			versionMetadata, err = client.CreateVersion(ctx, group, artifactID, s)
+			versionMetadata, err = client.CreateVersion(ctx, group, artifactID, s, labels)
 			if err != nil {
 				result.Error = fmt.Errorf("failed to create new version: %w", err)
 				return result
@@ -95,6 +100,7 @@ func RegisterSchema(ctx context.Context, client registry.RegistryClient, cfg *co
 			result.GlobalID = versionMetadata.GlobalID
 			result.ContentID = versionMetadata.ContentID
 			result.CreatedOn = versionMetadata.CreatedOn
+			result.LabelsApplied = labels
 			return result
 		}
 		result.Error = fmt.Errorf("failed to register artifact: %w", err)
@@ -107,6 +113,7 @@ func RegisterSchema(ctx context.Context, client registry.RegistryClient, cfg *co
 	result.GlobalID = metadata.GlobalID
 	result.ContentID = metadata.ContentID
 	result.CreatedOn = metadata.CreatedOn
+	result.LabelsApplied = labels
 	return result
 }
 

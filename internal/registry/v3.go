@@ -41,7 +41,7 @@ func NewV3Client(cfg *config.Config) (*V3Client, error) {
 
 // CreateArtifact creates a new artifact using V3 API
 // V3 uses structured request body with firstVersion nested structure
-func (c *V3Client) CreateArtifact(ctx context.Context, group, artifactID string, s *schema.AvroSchema) (*ArtifactMetadata, error) {
+func (c *V3Client) CreateArtifact(ctx context.Context, group, artifactID string, s *schema.AvroSchema, labels map[string]string) (*ArtifactMetadata, error) {
 	log := logger.GetLogger()
 	log.Info("Creating artifact: group=%s, artifactId=%s, version=%s", group, artifactID, s.Version)
 
@@ -81,6 +81,13 @@ func (c *V3Client) CreateArtifact(ctx context.Context, group, artifactID string,
 	versionContent.SetContentType(&contentType)
 
 	firstVersion.SetContent(versionContent)
+
+	// Labels belong on the version metadata, so attach them to the first version.
+	if lbl := newV3Labels(labels); lbl != nil {
+		firstVersion.SetLabels(lbl)
+		log.Debug("Setting %d label(s) on first version", len(labels))
+	}
+
 	createReq.SetFirstVersion(firstVersion)
 
 	// Configure query parameters for smart version handling
@@ -111,7 +118,7 @@ func (c *V3Client) CreateArtifact(ctx context.Context, group, artifactID string,
 }
 
 // CreateVersion creates a new version using V3 API
-func (c *V3Client) CreateVersion(ctx context.Context, group, artifactID string, s *schema.AvroSchema) (*VersionMetadata, error) {
+func (c *V3Client) CreateVersion(ctx context.Context, group, artifactID string, s *schema.AvroSchema, labels map[string]string) (*VersionMetadata, error) {
 	// Get minified content
 	content, err := s.GetMinifiedContent()
 	if err != nil {
@@ -125,6 +132,11 @@ func (c *V3Client) CreateVersion(ctx context.Context, group, artifactID string, 
 	// Set version description from schema doc
 	if doc := s.GetDoc(); doc != "" {
 		createReq.SetDescription(&doc)
+	}
+
+	// Attach labels to the version metadata.
+	if lbl := newV3Labels(labels); lbl != nil {
+		createReq.SetLabels(lbl)
 	}
 
 	// Create version content
@@ -143,6 +155,23 @@ func (c *V3Client) CreateVersion(ctx context.Context, group, artifactID string, 
 	}
 
 	return convertV3VersionMetadata(resp), nil
+}
+
+// newV3Labels builds a V3 Labels model from a key/value map, or returns nil when
+// there are no labels so callers can skip setting the field entirely.
+func newV3Labels(labels map[string]string) models.Labelsable {
+	if len(labels) == 0 {
+		return nil
+	}
+
+	data := make(map[string]any, len(labels))
+	for key, value := range labels {
+		data[key] = value
+	}
+
+	lbl := models.NewLabels()
+	lbl.SetAdditionalData(data)
+	return lbl
 }
 
 // GetArtifactMetadata retrieves artifact metadata using V3 API

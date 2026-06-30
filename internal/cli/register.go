@@ -28,6 +28,7 @@ func init() {
 	registerCmd.Flags().Bool("skip-validation", false, "Skip validation before registration")
 	registerCmd.Flags().String("format", "json", "Output format: json, table, summary, markdown")
 	registerCmd.Flags().StringP("output", "o", "", "Output file path (default: stdout)")
+	addLabelFlags(registerCmd)
 
 	_ = registerCmd.MarkFlagRequired("file")
 }
@@ -45,6 +46,10 @@ func runRegister(cmd *cobra.Command, args []string) error {
 	skipValidation, _ := cmd.Flags().GetBool("skip-validation")
 	format, _ := cmd.Flags().GetString("format")
 	outputPath, _ := cmd.Flags().GetString("output")
+	schemaLabels, err := parseLabelFlags(cmd)
+	if err != nil {
+		return err
+	}
 
 	log.Info("Loading configuration")
 	cfg, err := config.LoadConfig()
@@ -52,6 +57,10 @@ func runRegister(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 	log.Debug("Registry URL: %s, API version: %s", cfg.RegistryURL, cfg.APIVersion)
+
+	if err := guardLabelsAPIVersion(cfg, schemaLabels); err != nil {
+		return err
+	}
 
 	log.Info("Parsing schema file: %s", schemaFile)
 	avroSchema, err := schema.ParseAvroSchema(schemaFile)
@@ -110,7 +119,7 @@ func runRegister(cmd *cobra.Command, args []string) error {
 	}
 
 	// Use the shared registration function
-	result := operations.RegisterSchema(ctx, client, cfg, avroSchema, skipValidation)
+	result := operations.RegisterSchema(ctx, client, cfg, avroSchema, skipValidation, schemaLabels)
 	if !result.Success {
 		return result.Error
 	}
@@ -135,6 +144,8 @@ func runRegister(cmd *cobra.Command, args []string) error {
 		CreatedOn:     result.CreatedOn,
 		DurationMs:    duration.Milliseconds(),
 		IsNewArtifact: result.IsNewArtifact,
+		Labels:        result.LabelsApplied,
+		LabelsSkipped: result.LabelsSkipped,
 	}
 
 	return output.PrintRegistrationResult(regOutput, format, outputPath)

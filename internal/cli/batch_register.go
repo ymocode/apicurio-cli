@@ -28,6 +28,7 @@ func init() {
 	batchRegisterCmd.Flags().Bool("skip-validation", false, "Skip validation before registration")
 	batchRegisterCmd.Flags().Bool("fail-on-error", true, "Exit with error code if any registration fails")
 	batchRegisterCmd.Flags().StringP("output", "o", "", "Output file path (default: stdout)")
+	addLabelFlags(batchRegisterCmd)
 }
 
 func runBatchRegister(cmd *cobra.Command, args []string) error {
@@ -45,6 +46,10 @@ func runBatchRegister(cmd *cobra.Command, args []string) error {
 	dryRun, _ := cmd.Flags().GetBool("dry-run")
 	skipValidation, _ := cmd.Flags().GetBool("skip-validation")
 	failOnError, _ := cmd.Flags().GetBool("fail-on-error")
+	schemaLabels, err := parseLabelFlags(cmd)
+	if err != nil {
+		return err
+	}
 
 	if dryRun {
 		log.Info("Running in DRY RUN mode - no actual registration will occur")
@@ -80,6 +85,10 @@ func runBatchRegister(cmd *cobra.Command, args []string) error {
 	}
 	log.Debug("Registry URL: %s, API version: %s", cfg.RegistryURL, cfg.APIVersion)
 
+	if err := guardLabelsAPIVersion(cfg, schemaLabels); err != nil {
+		return err
+	}
+
 	log.Info("Creating registry client (API: %s)", cfg.APIVersion)
 	// Create registry client
 	client, err := registry.NewRegistryClient(cfg)
@@ -102,7 +111,7 @@ func runBatchRegister(cmd *cobra.Command, args []string) error {
 
 	log.Info("Processing batch with %d workers (skipValidation=%v)", parallel, skipValidation)
 	summary := batch.ProcessBatch(ctx, files, opts, func(ctx context.Context, filePath string) batch.BatchResult {
-		return registerSingleSchema(ctx, client, cfg, filePath, dryRun, skipValidation)
+		return registerSingleSchema(ctx, client, cfg, filePath, dryRun, skipValidation, schemaLabels)
 	})
 
 	duration := startTime.Stop()
@@ -128,7 +137,7 @@ func runBatchRegister(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func registerSingleSchema(ctx context.Context, client registry.RegistryClient, cfg *config.Config, filePath string, dryRun bool, skipValidation bool) batch.BatchResult {
+func registerSingleSchema(ctx context.Context, client registry.RegistryClient, cfg *config.Config, filePath string, dryRun bool, skipValidation bool, schemaLabels map[string]string) batch.BatchResult {
 	result := batch.BatchResult{
 		FilePath: filePath,
 		Action:   config.ActionRegistered,
@@ -169,7 +178,7 @@ func registerSingleSchema(ctx context.Context, client registry.RegistryClient, c
 	}
 
 	// Use the shared registration function
-	regResult := operations.RegisterSchema(ctx, client, cfg, avroSchema, skipValidation)
+	regResult := operations.RegisterSchema(ctx, client, cfg, avroSchema, skipValidation, schemaLabels)
 	if !regResult.Success {
 		result.Status = config.StatusFailed
 		result.Errors = append(result.Errors, regResult.Error.Error())
@@ -178,6 +187,8 @@ func registerSingleSchema(ctx context.Context, client registry.RegistryClient, c
 	}
 
 	result.Status = config.StatusSuccess
+	result.Labels = regResult.LabelsApplied
+	result.LabelsSkipped = regResult.LabelsSkipped
 	if regResult.IsNewArtifact {
 		result.Message = fmt.Sprintf("Created artifact %s (global ID: %d)", regResult.Version, regResult.GlobalID)
 	} else {

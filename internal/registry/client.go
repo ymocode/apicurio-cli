@@ -2,11 +2,16 @@ package registry
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/ymocode/apicurio-client/internal/config"
 	"github.com/ymocode/apicurio-client/internal/schema"
 )
+
+// ErrNotSupported indicates that the requested operation is not available for
+// the active API version.
+var ErrNotSupported = errors.New("operation not supported for this API version")
 
 // ArtifactMetadata represents metadata for an artifact, normalized across API versions
 type ArtifactMetadata struct {
@@ -48,12 +53,18 @@ type ArtifactReference struct {
 
 // RegistryClient is an interface that abstracts registry operations across V2, V3, and CCOMPAT APIs
 type RegistryClient interface {
-	// CreateArtifact creates a new artifact with initial content
-	// Schema parameter provides access to name, description, and content
-	CreateArtifact(ctx context.Context, group, artifactID string, schema *schema.AvroSchema) (*ArtifactMetadata, error)
+	// CreateArtifact creates a new artifact with initial content.
+	// The schema parameter provides access to name, description, and content.
+	// Labels, when non-empty, are attached to the created first version; they are
+	// a V3 concept, so V2/CCompat clients return ErrNotSupported when labels are
+	// supplied.
+	CreateArtifact(ctx context.Context, group, artifactID string, schema *schema.AvroSchema, labels map[string]string) (*ArtifactMetadata, error)
 
-	// CreateVersion creates a new version of an existing artifact
-	CreateVersion(ctx context.Context, group, artifactID string, schema *schema.AvroSchema) (*VersionMetadata, error)
+	// CreateVersion creates a new version of an existing artifact.
+	// Labels, when non-empty, are attached to the created version; they are a V3
+	// concept, so V2/CCompat clients return ErrNotSupported when labels are
+	// supplied.
+	CreateVersion(ctx context.Context, group, artifactID string, schema *schema.AvroSchema, labels map[string]string) (*VersionMetadata, error)
 
 	// GetArtifactMetadata retrieves metadata for the latest version of an artifact
 	GetArtifactMetadata(ctx context.Context, group, artifactID string) (*ArtifactMetadata, error)

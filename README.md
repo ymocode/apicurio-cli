@@ -86,6 +86,21 @@ Register a new schema or create a new version.
 - `--dry-run` - Preview registration without actually registering
 - `--skip-validation` - Skip validation before registration
 - `--format` - Output format: json, table, summary, markdown
+- `--labels` (alias `--label`) - Labels to attach to the created version as
+  `key=value`. Repeatable and comma-separated forms are equivalent
+  (`--labels a=1 --labels b=2` or `--labels a=1,b=2`). Values may contain `=`
+  (split on the first `=` only); an empty value (`key=`) is allowed.
+  Requires `--api-version v3`. Labels are applied only when a new version is
+  created; re-registering unchanged content leaves the existing version's labels
+  untouched. Applied labels appear in JSON output.
+
+```bash
+./bin/apicurio-client register \
+  --registry-url http://localhost:8081 \
+  --api-version v3 \
+  --file schema.avsc \
+  --labels bundleVersion=1.2.0 --labels gitTag=v1.2.0 --labels gitSha=abc1234
+```
 
 ### validate
 Validate schema compatibility without registration (dry-run validation).
@@ -135,6 +150,21 @@ Register multiple schemas to the registry.
   --dir ./schemas \
   --dry-run
 ```
+
+Attach release provenance labels to every version created by the run (V3 only).
+The same labels apply to all schemas in the batch and are written only to newly
+created versions:
+
+```bash
+./bin/apicurio-client batch register \
+  --registry-url http://localhost:8081 \
+  --api-version v3 \
+  --dir ./schemas \
+  --labels bundleVersion=1.2.0 --labels gitTag=v1.2.0 --labels gitSha=abc1234
+```
+
+**Flags:** in addition to the shared batch flags, supports `--skip-validation`,
+`--fail-on-error`, and `--labels`/`--label` (see [register](#register)).
 
 ### asyncapi validate
 Validate an AsyncAPI document against the registry (V3 only).

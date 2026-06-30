@@ -41,7 +41,11 @@ func NewV2Client(cfg *config.Config) (*V2Client, error) {
 
 // CreateArtifact creates a new artifact using V2 API
 // V2 uses headers for metadata (X-Registry-ArtifactId, X-Registry-ArtifactType, X-Registry-Version)
-func (c *V2Client) CreateArtifact(ctx context.Context, group, artifactID string, s *schema.AvroSchema) (*ArtifactMetadata, error) {
+func (c *V2Client) CreateArtifact(ctx context.Context, group, artifactID string, s *schema.AvroSchema, labels map[string]string) (*ArtifactMetadata, error) {
+	if len(labels) > 0 {
+		return nil, fmt.Errorf("version labels require --api-version v3: %w", ErrNotSupported)
+	}
+
 	// Get minified content
 	content, err := s.GetMinifiedContent()
 	if err != nil {
@@ -85,7 +89,11 @@ func (c *V2Client) CreateArtifact(ctx context.Context, group, artifactID string,
 }
 
 // CreateVersion creates a new version using V2 API
-func (c *V2Client) CreateVersion(ctx context.Context, group, artifactID string, s *schema.AvroSchema) (*VersionMetadata, error) {
+func (c *V2Client) CreateVersion(ctx context.Context, group, artifactID string, s *schema.AvroSchema, labels map[string]string) (*VersionMetadata, error) {
+	if len(labels) > 0 {
+		return nil, fmt.Errorf("version labels require --api-version v3: %w", ErrNotSupported)
+	}
+
 	// Get minified content
 	content, err := s.GetMinifiedContent()
 	if err != nil {
