@@ -4,6 +4,7 @@ package asyncapi
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -15,8 +16,15 @@ import (
 // Only fields we need are defined
 type asyncAPIDocument struct {
 	Components struct {
-		Schemas map[string]schemaRef `yaml:"schemas"`
+		Schemas  map[string]schemaRef  `yaml:"schemas"`
+		Messages map[string]messageDef `yaml:"messages"`
 	} `yaml:"components"`
+	Channels map[string]struct {
+		Messages map[string]messageDef `yaml:"messages"`
+	} `yaml:"channels"`
+	Operations map[string]struct {
+		Messages []messageDef `yaml:"messages"`
+	} `yaml:"operations"`
 	Info struct {
 		Title       string `yaml:"title"`
 		Version     string `yaml:"version"`
@@ -27,15 +35,35 @@ type asyncAPIDocument struct {
 	XDomain    string `yaml:"x-domain"`
 }
 
-// schemaRef represents a schema that may contain a $ref to an external artifact
-// Supports both direct $ref and nested schema.$ref structures
+// schemaRef represents a schema that may contain a $ref to an external artifact.
+// Supports both direct $ref and nested schema.$ref structures.
 type schemaRef struct {
-	// Direct $ref at components.schemas.{name}.$ref
-	Ref string `yaml:"$ref"`
-	// Nested $ref at components.schemas.{name}.schema.$ref (AsyncAPI 3.0 multi-format schema)
+	Ref    string `yaml:"$ref"`
 	Schema struct {
 		Ref string `yaml:"$ref"`
 	} `yaml:"schema"`
+}
+
+// messageDef represents an AsyncAPI Message Object, or a Reference Object to one.
+type messageDef struct {
+	Payload payloadRef `yaml:"payload"`
+}
+
+// payloadRef represents a message payload Multi-Format Schema Object.
+// Supports both the direct form (payload.$ref) and the wrapped form (payload.schema.$ref).
+type payloadRef struct {
+	Ref    string `yaml:"$ref"`
+	Schema struct {
+		Ref string `yaml:"$ref"`
+	} `yaml:"schema"`
+}
+
+// ref returns the payload reference, preferring the direct form.
+func (p payloadRef) ref() string {
+	if p.Ref != "" {
+		return p.Ref
+	}
+	return p.Schema.Ref
 }
 
 // ParseFile parses an AsyncAPI YAML file and extracts metadata and references
@@ -88,35 +116,68 @@ func Parse(content []byte) (*AsyncAPIDocument, error) {
 	}, nil
 }
 
-// extractReferences extracts schema references from AsyncAPI components.schemas
-// Supports both:
-//   - components.schemas.{name}.$ref (direct reference)
-//   - components.schemas.{name}.schema.$ref (multi-format schema object)
+// extractReferences extracts external artifact references from an AsyncAPI
+// document. It reads:
+//   - components.schemas.{name}.$ref and .schema.$ref
+//   - components.messages.{name}.payload.$ref and .payload.schema.$ref
+//   - channels.{id}.messages.{name}.payload (inline messages)
+//   - operations.{id}.messages[].payload (inline messages)
+//
+// Internal references (#/...) are ignored, and references that resolve to the
+// same coordinate are de-duplicated. The result is ordered by coordinate.
 func extractReferences(doc asyncAPIDocument) ([]registry.ArtifactReference, error) {
+	seen := make(map[string]bool)
 	var refs []registry.ArtifactReference
 
+	add := func(refStr string) error {
+		if refStr == "" || strings.HasPrefix(refStr, "#") {
+			return nil
+		}
+		ref, err := parseReference(refStr)
+		if err != nil {
+			return fmt.Errorf("invalid reference %q: %w", refStr, err)
+		}
+		if seen[ref.Name] {
+			return nil
+		}
+		seen[ref.Name] = true
+		refs = append(refs, *ref)
+		return nil
+	}
+
 	for _, schema := range doc.Components.Schemas {
-		// Check both direct $ref and nested schema.$ref
 		refStr := schema.Ref
 		if refStr == "" {
 			refStr = schema.Schema.Ref
 		}
-		if refStr == "" {
-			continue
+		if err := add(refStr); err != nil {
+			return nil, err
 		}
-
-		// Skip internal references (e.g., #/components/schemas/...)
-		if strings.HasPrefix(refStr, "#") {
-			continue
-		}
-
-		ref, err := parseReference(refStr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid reference %q: %w", refStr, err)
-		}
-		refs = append(refs, *ref)
 	}
 
+	for _, message := range doc.Components.Messages {
+		if err := add(message.Payload.ref()); err != nil {
+			return nil, err
+		}
+	}
+
+	for _, channel := range doc.Channels {
+		for _, message := range channel.Messages {
+			if err := add(message.Payload.ref()); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	for _, operation := range doc.Operations {
+		for _, message := range operation.Messages {
+			if err := add(message.Payload.ref()); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	sort.Slice(refs, func(i, j int) bool { return refs[i].Name < refs[j].Name })
 	return refs, nil
 }
 
